@@ -1,3 +1,6 @@
 # DLang Junk
 out/
 dub.selections.json
+
+# macOS junk
+.DS_Store

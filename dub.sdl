@@ -3,13 +3,35 @@ description "A minimal D application."
 authors "Luna"
 copyright "Copyright © 2026, Luna"
 license "proprietary"
+
+# Dependencies
 dependency "numem" path="../Projects/numem"
+dependency "bindbc-assimp5" version="~>0.1.0"
 dependency "imagefmt" version="~>2.1.2"
 dependency "sdl-d" path="../Projects/sdl-d"
 dependency "audio-formats" version="~>3.1.0"
 dependency "niobium" path="../Projects/niobium"
 dependency "nulib" path="../Projects/nulib"
 dependency "inmath" version=">=1.3.2"
+
+# Outputs paths
 targetPath "out/"
 workingDirectory "out/"
 stringImportPaths "res/"
+
+#
+# Native Dependencies
+#
+libs "assimp"
+
+# macOS-specific
+lflags "-Llibs/osx" platform="osx"
+copyFiles "libs/osx/*" platform="osx"
+
+# Linux-specific
+lflags "-Llibs/linux-x86_64" platform="x86_64-linux"
+copyFiles "libs/linux-x86_64/*" platform="x86_64-linux"
+
+# Windows-specific
+lflags "/LIBPATH:libs\\win32-x86_64" platform="x86_64-windows"
+copyFiles "libs/win32-x86_64/*" platform="x86_64-windows"
