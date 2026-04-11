@@ -60,8 +60,8 @@ private:
             NioSamplerWrap.repeat, 
             NioSamplerWrap.repeat, 
             NioSamplerWrap.repeat, 
-            NioMinMagFilter.linear, 
-            NioMinMagFilter.linear, 
+            NioMinMagFilter.nearest, 
+            NioMinMagFilter.nearest, 
             NioMipFilter.none,
         ));
 
