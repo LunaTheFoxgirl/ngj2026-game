@@ -39,6 +39,12 @@ private:
         return result;
     }
 
+    vec2i getPos() {
+        vec2i result;
+        SDL_GetWindowPosition(handle, &result.vector[0], &result.vector[1]);
+        return result;
+    }
+
     NioSurface createSurface() {
         version(OSX) {
             
@@ -48,6 +54,7 @@ private:
             surface.size = NioExtent2D(640, 480);
             surface.format = NioPixelFormat.bgra8UnormSRGB;
             surface.framesInFlight = 3;
+            surface.presentMode = NioPresentMode.mailbox;
             return surface;
         } else version(linux) {
 
@@ -70,10 +77,17 @@ public:
     }
 
     /**
+        Position of the window
+    */
+    @property vec2i position() => this.getPos();
+    @property void position(vec2i value) {
+        SDL_SetWindowPosition(handle, value.x, value.y);
+    }
+
+    /**
         The size of the window in window units (aka points).
     */
     @property vec2i size() => this.getSizePt();
-
 
     /**
         The size of the window in pixels.

@@ -9,6 +9,8 @@ import niobium;
 import sdl;
 
 public import engine.window;
+public import engine.texture;
+public import engine.spritebatch;
 public import numem;
 
 /**

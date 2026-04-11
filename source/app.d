@@ -4,6 +4,8 @@ import niobium;
 import inmath;
 import numem;
 import sdl;
+import engine.spritebatch;
+import engine.input;
 
 struct VtxData {
 	vec2 position;
@@ -13,34 +15,10 @@ struct VtxData {
 void main() {
 	initializeEngine();
 		Window window = nogc_new!Window("Test", 640, 480);
-		NioSurface surface = window.surface;
-
-		// Create buffer for colored triangle.
-		NioBuffer vertices = RENDER_DEVICE.createBuffer(NioBufferDescriptor(
-			NioBufferUsage.vertexBuffer,
-			NioStorageMode.privateStorage,
-			VtxData.sizeof*3
-		));
-		vertices.upload([
-			VtxData(vec2(-1, -1), vec3(1, 0, 0)),
-			VtxData(vec2(0, 1), vec3(0, 1, 0)),
-			VtxData(vec2(1, -1), vec3(0, 0, 1)),
-		], 0);
-
-		// Create shader
-		NioShader shader = RENDER_DEVICE.createShaderFromNativeSource("triangle.metal", cast(ubyte[])import("triangle.metal"));
-		NioRenderPipeline pipeline = RENDER_DEVICE.createRenderPipeline(NioRenderPipelineDescriptor(
-			shader.getFunction("vertex_main"),
-			shader.getFunction("fragment_main"),
-			NioVertexDescriptor(
-				[NioVertexBindingDescriptor(NioVertexInputRate.perVertex, VtxData.sizeof)],
-				[NioVertexAttributeDescriptor(NioVertexFormat.float2, 0, 0), NioVertexAttributeDescriptor(NioVertexFormat.float3, 0, vec2.sizeof)]
-			),
-			[NioRenderPipelineAttachmentDescriptor(surface.format, true)],
-		));
-
-		// Create command queue.
 		NioCommandQueue queue = RENDER_DEVICE.createQueue(NioCommandQueueDescriptor(10));
+		NioSurface surface = window.surface;
+		Texture2D texture = nogc_new!Texture2D("assets/fox.png");
+		SpriteBatch batch = nogc_new!SpriteBatch();
 
 
 		while(Window.windows.length > 0) {
@@ -55,22 +33,22 @@ void main() {
 				}
 			}
 
-			if (NioDrawable drawable = surface.next()) {
-				if (NioCommandBuffer buffer = queue.fetch()) {
-					NioRenderCommandEncoder pass = buffer.beginRenderPass(NioRenderPassDescriptor(
-						[NioColorAttachmentDescriptor(drawable.texture, 0, 0, 0, NioLoadAction.clear, NioStoreAction.store, NioColor(0, 0, 0, 0))]
-					));
+			import std.random : uniform;
+			if (auto drawable = surface.next()) {
+				if (auto buffer = queue.fetch()) {
+					auto renderPass = buffer.beginRenderPass(NioRenderPassDescriptor([NioColorAttachmentDescriptor(drawable.texture, 0, 0, 0, NioLoadAction.clear, NioStoreAction.store, NioColor(0, 0, 0, 0))]));
+						renderPass.setCulling(NioCulling.none);
+						NioExtent2D canvasArea = surface.size;
+						foreach(i; 0..100_000) {
+							batch.draw(texture, rect(uniform(0, canvasArea.width), uniform(0, canvasArea.height), texture.width/2, texture.height/2), vec2(0.5, 0.5));
+						}
+						batch.flush(renderPass, 
+							mat4.orthographic01(0, canvasArea.width, canvasArea.height, 0, 0.1, 1000)
+						);
 
-					pass.setPipeline(pipeline);
-					pass.setVertexBuffer(vertices, 0, 0);
-					pass.draw(NioPrimitive.triangles, 0, 3);
-
-					pass.endEncoding();
-
-
+					renderPass.endEncoding();
 					buffer.present(drawable);
 					queue.commit(buffer);
-					buffer.await();
 				}
 			}
 		}

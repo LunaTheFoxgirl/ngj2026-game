@@ -26,6 +26,16 @@ private:
         ));
     }
 
+    void premultiply(ref ubyte[] data) {
+        foreach(ref color; cast(ubyte[4][])data) {
+            float a = cast(float)color[3] / 255.0;
+
+            color[0] = cast(ubyte)((cast(float)color[0] / 255.0) * a * 255);
+            color[1] = cast(ubyte)((cast(float)color[1] / 255.0) * a * 255);
+            color[2] = cast(ubyte)((cast(float)color[2] / 255.0) * a * 255);
+        }
+    }
+
 public:
 
     /**
@@ -61,7 +71,8 @@ public:
             throw nogc_new!NuException(IF_ERROR[image.e]);
         }
         this.handle_ = this.createTextureHandle(image.w, image.h, NioPixelFormat.rgba8UnormSRGB);
-        handle_.upload(NioRegion3D(0, 0, 0, image.w, image.h, 1), 0, 0, image.buf8, image.w*image.c);
+        this.premultiply(image.buf8);
+        handle_.upload(NioRegion3D(0, 0, 0, image.w, image.h, 1), 0, 0, image.buf8, 0);
     }
 
     /**
@@ -77,6 +88,7 @@ public:
             throw nogc_new!NuException(IF_ERROR[image.e]);
         }
         this.handle_ = this.createTextureHandle(image.w, image.h, NioPixelFormat.rgba8UnormSRGB);
+        this.premultiply(image.buf8);
         handle_.upload(NioRegion3D(0, 0, 0, image.w, image.h, 1), 0, 0, image.buf8, image.w*image.c);
     }
 
