@@ -75,18 +75,36 @@ private:
     }
 
     // Adds a sprite to the current bucket.
-    void addSprite(rect area, rect uv, vec4 color) {
+    void addSprite(rect area, rect uv, vec4 color, vec2 origin = vec2(0, 0), float rotation = 0) {
         if (wptr+6 > vertices.length) {
             vertices = vertices.nu_resize(vertices.length+6);
         }
 
+        // Size of the sprite in pixel coordinates.
+        vec2 size = vec2(area.width, area.height);
+
+        // Base vertices.
+        vec2 tl = vec2(area.left, area.top);
+        vec2 bl = vec2(area.left, area.bottom);
+        vec2 tr = vec2(area.right, area.top);
+        vec2 br = vec2(area.right, area.bottom);
+
+        // Make rotated vertices.
+        if (rotation != 0) {
+            mat3 rotM = mat3.zRotation(rotation);
+            tl = ((rotM * vec3(-origin.x, -origin.y, 0)).xy * size) + area.corner;
+            bl = ((rotM * vec3(-origin.x, +origin.y, 0)).xy * size) + area.corner;
+            tr = ((rotM * vec3(+origin.x, -origin.y, 0)).xy * size) + area.corner;
+            br = ((rotM * vec3(+origin.x, +origin.y, 0)).xy * size) + area.corner;
+        }
+
         // Push a rectangle from the coordinates in.
-        this.vertices[wptr+0] = SpriteVtx(vec2(area.left, area.top),        vec2(uv.left, uv.top),          color);
-        this.vertices[wptr+1] = SpriteVtx(vec2(area.left, area.bottom),     vec2(uv.left, uv.bottom),       color);
-        this.vertices[wptr+2] = SpriteVtx(vec2(area.right, area.top),       vec2(area.right, area.top),     color);
-        this.vertices[wptr+3] = SpriteVtx(vec2(area.right, area.top),       vec2(area.right, area.top),     color);
-        this.vertices[wptr+4] = SpriteVtx(vec2(area.left, area.bottom),     vec2(uv.left, uv.bottom),       color);
-        this.vertices[wptr+5] = SpriteVtx(vec2(area.right, area.bottom),    vec2(area.right, area.bottom),  color);
+        this.vertices[wptr+0] = SpriteVtx(tl,   vec2(uv.left,       uv.top),        color);
+        this.vertices[wptr+1] = SpriteVtx(bl,   vec2(uv.left,       uv.bottom),     color);
+        this.vertices[wptr+2] = SpriteVtx(tr,   vec2(area.right,    area.top),      color);
+        this.vertices[wptr+3] = SpriteVtx(tr,   vec2(area.right,    area.top),      color);
+        this.vertices[wptr+4] = SpriteVtx(bl,   vec2(uv.left,       uv.bottom),     color);
+        this.vertices[wptr+5] = SpriteVtx(br,   vec2(area.right,    area.bottom),   color);
 
         // Increase bucket slice.
         wptr += 6;
@@ -104,6 +122,22 @@ private:
 
         // Upload data to the buffer, so that it's ready for rendering.
         buffers[activeBuffer].upload(vertices[0..wptr], 0);
+    }
+
+    // Evaluates whether a new bucket needs to be created, 
+    void beginSpritePush(NioTexture forTexture) {
+
+        // Add a new bucket of the data is incompatible.
+        if (bptr == -1 || forTexture !is buckets[bptr].texture) {
+            if (++bptr >= buckets.length) {
+                buckets = buckets.nu_resize(bptr+1);
+            }
+
+            // Set bucket data.
+            buckets[bptr].texture = forTexture;
+            buckets[bptr].start = wptr;
+            buckets[bptr].end = wptr;
+        }
     }
 
 public:
@@ -141,15 +175,24 @@ public:
             color =     The multiplicative color to apply to the sprite.
     */
     void draw(Texture2D texture, rect area, rect uvs = rect(0, 0, 1, 1), vec4 color = vec4.one) {
-
-        // Add a new bucket of the data is incompatible.
-        if (bptr == -1 || texture !is buckets[bptr].texture) {
-            bptr++;
-            if (bptr >= buckets.length)
-                buckets = buckets.nu_resize(bptr+1);
-        }
-
+        this.beginSpritePush(texture.handle);
         this.addSprite(area, uvs, color);
+    }
+
+    /**
+        Draws a texture to the sprite batcher.
+
+        Params:
+            texture =   The texture to draw.
+            area =      The area to draw the texture at.
+            uvs =       The UVs to fetch from the texture.
+            origin =    Origin of rotation
+            rotation =  Rotation delta (radians)
+            color =     The multiplicative color to apply to the sprite.
+    */
+    void draw(Texture2D texture, rect area, rect uvs = rect(0, 0, 1, 1), vec2 origin = vec2(0, 0), float rotation = 0, vec4 color = vec4.one) {
+        this.beginSpritePush(texture.handle);
+        this.addSprite(area, uvs, color, origin, rotation);
     }
 
     /**
