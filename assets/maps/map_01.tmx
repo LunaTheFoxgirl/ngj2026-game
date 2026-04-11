@@ -3,7 +3,7 @@
  <editorsettings>
   <export target="../assets/maps/TestMap.tmj" format="json"/>
  </editorsettings>
- <tileset firstgid="1" source="../../monochrome_tilemap.tsx"/>
+ <tileset firstgid="1" source="../tilesets/tileset_01.tsx"/>
  <layer id="1" name="Tile Layer 1" width="128" height="32">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
