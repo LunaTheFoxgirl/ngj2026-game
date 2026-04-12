@@ -49,7 +49,7 @@ void initializeEngine() @nogc{
     RENDER_DEVICE = NioDevice.systemDevices[0];
 	RENDER_QUEUE = RENDER_DEVICE.createQueue(NioCommandQueueDescriptor(10));
     RENDER_BATCH = nogc_new!SpriteBatch();
-    GAME_WINDOW = nogc_new!Window("Scrungly's Void Stroll", 1920, 1080);
+    GAME_WINDOW = nogc_new!Window("Scrungly's Void Stroll | Press R to Reset!", 1920, 1080);
     GAME_SURFACE = GAME_WINDOW.surface;
 }
 

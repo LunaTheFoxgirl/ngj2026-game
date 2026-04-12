@@ -8,12 +8,15 @@ import std.stdio;
 
 enum SCRONGLER_ATTACK_RATE = 1.0;
 
+enum SCRONGLER_HEALTH = 5_000;
+
 /**
     The big bad.
 */
 class Scrongler : Entity {
 private:
     __gshared Texture2D texture;
+    __gshared uint scronglerMaxHealth = SCRONGLER_HEALTH;
 
     Entity target;
     vec2 targetPosition = vec2(0, 0);
@@ -25,6 +28,10 @@ private:
     int frame = 0;
 
 protected:
+
+    override void onDeath() {
+        scene.newRound();
+    }
 
 
     /**
@@ -53,7 +60,8 @@ public:
         if (!texture)
             this.texture = nogc_new!Texture2D("assets/sprites/scrongler.png");
 
-        this.hitpoints = 100_000;
+        this.hitpoints = scronglerMaxHealth;
+        scronglerMaxHealth *= 2;
     }
 
     /**

@@ -15,6 +15,7 @@ dependency "nulib" path="../Projects/nulib"
 dependency "inmath" path="../Projects/inmath"
 
 # Outputs paths
+targetName "scrongle"
 targetPath "out/"
 workingDirectory "out/"
 stringImportPaths "res/"

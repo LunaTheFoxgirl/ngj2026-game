@@ -68,7 +68,7 @@ public:
 
         shake = lerp(
             vec2(0, 0),
-            vec2(uniform01(), uniform01())*2,
+            vec2(uniform01(), uniform01())*8,
             dmgTimer
         );
     }

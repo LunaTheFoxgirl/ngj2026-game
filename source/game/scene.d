@@ -16,7 +16,7 @@ enum ORB_COUNT = 25;
 enum VIEWPORT_WIDTH = 1920;
 enum VIEWPORT_HEIGHT = 1080;
 
-enum TIME_TO_SCRONGLER = 60*5;
+enum TIME_TO_SCRONGLER = 60;
 
 /**
     A collection of tiles and entities that are currently active in the game.
@@ -26,6 +26,7 @@ private:
     long lastTime;
     Entity[] entities;
     SpriteBatch spriteBatch;
+    bool started = false;
 
     void focusCamera(float deltaTime) {
         uint scrunglies = 0;
@@ -104,6 +105,7 @@ private:
     }
 
     // Mechanics
+    float windowUpdateTimer = 0;
     float spawnTimer = 0;
     Scrongler boss;
 
@@ -146,7 +148,32 @@ private:
         }
     }
 
+    void updateWindowTitle(float delta) {
+        import std.format;
+
+        windowUpdateTimer += delta;
+        if (windowUpdateTimer > 1) {
+            windowUpdateTimer = 0;
+
+            if (!started) {
+                GAME_WINDOW.title = "Scrungly's Void Adventure | Click to start...";
+                return;
+            }
+
+            if (spawnTimer > TIME_TO_SCRONGLER) {
+                GAME_WINDOW.title = "HE IS HERE | R to Reset";
+                return;
+            }
+
+            float timeToBoss = TIME_TO_SCRONGLER - spawnTimer;
+            GAME_WINDOW.title = "Scrungly's Void Adventure | Scrongler is coming in %.2f seconds!\0".format(timeToBoss);
+            return;
+        }
+    }
+
 public:
+
+    uint round = 1;
 
     /**
         The camera of the scene.
@@ -164,8 +191,7 @@ public:
     this(SpriteBatch spriteBatch) {
         this.spriteBatch = spriteBatch;
         this.createBorder();
-
-        this.spawn(new Scrungly(this, vec2(0, 0)));
+        this.reset();
     }
 
     /**
@@ -181,27 +207,42 @@ public:
     void update() {
         long currentTime = getTimeTicks();
         float deltaTime = cast(float)(currentTime-lastTime) * 0.001;
+        this.focusCamera(deltaTime);
+        
+        this.updateWindowTitle(deltaTime);
 
-        // Clean up dead entities
-        import std.algorithm.mutation : remove;
-        foreach_reverse(i; 0..entities.length) {
-            if (!entities[i].isAlive)
-                entities = entities.remove(i);
+        if (!started) {
+            if (Mouse.isClicked(MouseButton.BUTTON_LEFT))
+                started = true;
         }
 
-        // Update the border and base mechanics
-        this.updateBorder();
-        this.updateBaseMechanics(deltaTime);
+        if (started) {
+            if (Keyboard.isKeyReleased(Key.SDL_SCANCODE_R)) {
+                this.reset();
+                return;
+            }
 
-        // Update entities.
-        foreach(entity; entities)
-            entity.update(deltaTime);
+            // Clean up dead entities
+            import std.algorithm.mutation : remove;
+            foreach_reverse(i; 0..entities.length) {
+                if (!entities[i].isAlive)
+                    entities = entities.remove(i);
+            }
 
-        // Post-update entities.
-        foreach(entity; entities)
-            entity.postUpdate(deltaTime);
+            // Update the border and base mechanics
+            this.updateBaseMechanics(deltaTime);
+            this.updateBorder();
 
-        this.focusCamera(deltaTime);
+            // Update entities.
+            foreach(entity; entities)
+                entity.update(deltaTime);
+
+            // Post-update entities.
+            foreach(entity; entities)
+                entity.postUpdate(deltaTime);
+
+        }
+        
         lastTime = currentTime;
     }
 
@@ -232,7 +273,9 @@ public:
     }
 
     void newRound() {
+        boss = null;
         spawnTimer = 0;
+        round++;
     }
 
     /**
@@ -250,6 +293,18 @@ public:
                 return entity;
         }
         return null;
+    }
+
+    /**
+        Resets the game
+    */
+    void reset() {
+        round = 0;
+        started = false;
+        entities = null;
+        this.destroyOrbs();
+        this.spawn(new Scrungly(this, vec2(0, 0)));
+        this.newRound();
     }
 }
 
