@@ -11,6 +11,11 @@ private:
 public:
 
     /**
+        Viewport of the camera.
+    */
+    NioExtent2D viewport;
+
+    /**
         Position of the camera
     */
     vec2 position = vec2(0, 0);
@@ -29,7 +34,9 @@ public:
         Update's the camera's matrix.
     */
     void update(NioExtent2D viewport) {
+        this.viewport = viewport;
         this.matrix_ = 
+            mat4.orthographic01(0, viewport.width, viewport.height, 0, 0.1, 1000) *
             mat4.translation((viewport.width/2), (viewport.height/2), 0) *
             mat4.scaling(scale, scale, 1) *
             mat4.translation(position.x, position.y, 0).inverse();

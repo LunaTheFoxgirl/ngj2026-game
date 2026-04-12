@@ -8,9 +8,12 @@ import game.scene;
 abstract class Entity {
 private:
     Scene scene_;
-    int health_ = 100;
 
 protected:
+    /**
+        Hitpoints of the entity.
+    */
+    int hitpoints = 100;
 
     /**
         Position of the entity, in pixels.
@@ -31,6 +34,14 @@ protected:
         Callback invoked when the entity dies.
     */
     void onDeath() { }
+
+    /**
+        Callback invoked when the entity is damaged.
+
+        Params:
+            damage = The amount of damage that was taken.
+    */
+    void onDamaged(int damage) { }
     
 public:
 
@@ -45,14 +56,19 @@ public:
     final @property vec2 drawPosition() => vec2(round(position.x), round(position.y));
 
     /**
+        The hitbox of the entity.
+    */
+    abstract @property rect hitbox();
+
+    /**
         Whether the entity is alive.
     */
-    final @property bool isAlive() => health_ > 0;
+    final @property bool isAlive() => hitpoints > 0;
 
     /**
         Health of the entity.
     */
-    final @property int health() => health_;
+    final @property int health() => hitpoints;
 
     /**
         Updates the entity.
@@ -95,8 +111,20 @@ public:
             attack = the attack power of the entity.
     */
     final void damage(int attack) {
-        this.health_ -= attack;
-        if (health_ <= 0)
-            this.onDeath();
+        if (hitpoints > 0) {
+            int beforeHP = hitpoints;
+            this.hitpoints -= attack;
+            this.onDamaged(attack);
+
+            if (beforeHP > 0 && hitpoints <= 0)
+                this.onDeath();
+        }
+    }
+
+    /**
+        Forcefully kills an entity.
+    */
+    final void forceKill() {
+        this.hitpoints = -1000;
     }
 }

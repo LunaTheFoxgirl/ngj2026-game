@@ -147,6 +147,8 @@ private:
         if (wptr+6 > vertices.length)
             vertices = vertices.nu_resize(nu_alignup(wptr+6, 6*align_));
 
+        uv.expand(vec2(-0.001, -0.001));
+
         // Size of the sprite in pixel coordinates.
         vec2 size = vec2(area.width, area.height);
 

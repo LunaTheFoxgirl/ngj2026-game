@@ -6,8 +6,17 @@ import inmath.color;
 import inmath;
 import engine;
 import std.random;
+import game.scrongler;
+import game.orb;
 
 enum BORDER_SIZE = 500;
+
+enum ORB_COUNT = 25;
+
+enum VIEWPORT_WIDTH = 1920;
+enum VIEWPORT_HEIGHT = 1080;
+
+enum TIME_TO_SCRONGLER = 60*5;
 
 /**
     A collection of tiles and entities that are currently active in the game.
@@ -18,7 +27,7 @@ private:
     Entity[] entities;
     SpriteBatch spriteBatch;
 
-    void focusCamera() {
+    void focusCamera(float deltaTime) {
         uint scrunglies = 0;
         vec2 accum = vec2(0, 0);
         foreach(entity; entities) {
@@ -28,7 +37,12 @@ private:
             }
         }
 
-        camera.position = vec2(accum.x / scrunglies, accum.y / scrunglies);
+        vec2 camTarget = vec2(accum.x / scrunglies, accum.y / scrunglies);
+        camera.position = dampen(
+            camera.position, 
+            camTarget, 
+            deltaTime
+        );
     }
 
     // Arena border
@@ -88,6 +102,50 @@ private:
     void updateBorder() {
         borderColor = vec4(hsv2rgb(vec3((sin(cast(float)getTimeTicks()*0.001)+1)/2, 1, 1)), 1);
     }
+
+    // Mechanics
+    float spawnTimer = 0;
+    Scrongler boss;
+
+    void updateBaseMechanics(float delta) {
+
+        // You have 5 minutes to get scrunglies for your army.
+        if (spawnTimer < TIME_TO_SCRONGLER) {
+            spawnTimer += delta;
+            this.ensureOrbs();
+            return;
+        }
+
+        // The boss has arrived!!
+        if (!boss) {
+            this.destroyOrbs();
+            boss = new Scrongler(this, vec2(0, 0));
+            this.spawn(boss);
+        }
+    }
+
+    void ensureOrbs() {
+        uint orbs = 0;
+        foreach(entity; entities) {
+            if (cast(Orb)entity)
+                orbs++;
+        }
+
+        // Spawn needed orb count.
+        while(orbs++ < ORB_COUNT)
+            this.spawn(new Orb(this, vec2(uniform(-BORDER_SIZE, BORDER_SIZE), uniform(-BORDER_SIZE, BORDER_SIZE))));
+    }
+
+    void destroyOrbs() {
+        import std.algorithm.mutation : remove;
+        foreach_reverse(i; 0..entities.length) {
+            if (cast(Orb)entities[i]) {
+                entities[i].forceKill();
+                entities = entities.remove(i);
+            }
+        }
+    }
+
 public:
 
     /**
@@ -96,16 +154,18 @@ public:
     Camera camera;
 
     /**
+        All currently alive entities.
+    */
+    @property Entity[] allEntities() => entities;
+
+    /**
         Constructs a new scene.
     */
     this(SpriteBatch spriteBatch) {
         this.spriteBatch = spriteBatch;
         this.createBorder();
 
-        foreach(i; 0..20) {
-            this.spawn(new Scrungly(this, vec2(uniform(-100, 100), uniform(-100, 100))));
-
-        }
+        this.spawn(new Scrungly(this, vec2(0, 0)));
     }
 
     /**
@@ -129,6 +189,10 @@ public:
                 entities = entities.remove(i);
         }
 
+        // Update the border and base mechanics
+        this.updateBorder();
+        this.updateBaseMechanics(deltaTime);
+
         // Update entities.
         foreach(entity; entities)
             entity.update(deltaTime);
@@ -137,9 +201,7 @@ public:
         foreach(entity; entities)
             entity.postUpdate(deltaTime);
 
-        this.focusCamera();
-        this.updateBorder();
-        
+        this.focusCamera(deltaTime);
         lastTime = currentTime;
     }
 
@@ -154,22 +216,40 @@ public:
         foreach(entity; entities)
             entity.draw(spriteBatch);
         
-        camera.update(NioExtent2D(1920, 1080));
-
-        mat4 viewProjection = mat4.orthographic01(0, 1920, 1080, 0, 0.1, 1000) * camera.matrix;
-        borderUbo.upload([BorderData(viewProjection.transposed(), borderColor)], 0);
+        camera.update(NioExtent2D(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
+        borderUbo.upload([BorderData(camera.matrix.transposed(), borderColor)], 0);
 
         auto pass = cmdbuffer.beginRenderPass(NioRenderPassDescriptor([NioColorAttachmentDescriptor(target, 0, 0, 0, NioLoadAction.clear, NioStoreAction.store, clearColor)]));
-        spriteBatch.flush(pass, viewProjection);
+            spriteBatch.flush(pass, camera.matrix);
 
-
-        // Draw border around level.
-        pass.setPipeline(borderPipeline);
-        pass.setVertexBuffer(borderVbo, 0, 0);
-        pass.setVertexBuffer(borderUbo, 0, 1);
-        pass.setFragmentBuffer(borderUbo, 0, 1);
-        pass.draw(NioPrimitive.lines, 0, 8);
+            // Draw border around level.
+            pass.setPipeline(borderPipeline);
+            pass.setVertexBuffer(borderVbo, 0, 0);
+            pass.setVertexBuffer(borderUbo, 0, 1);
+            pass.setFragmentBuffer(borderUbo, 0, 1);
+            pass.draw(NioPrimitive.lines, 0, 8);
         pass.endEncoding();
+    }
+
+    void newRound() {
+        spawnTimer = 0;
+    }
+
+    /**
+        Gets entity at position.
+
+        Params:
+            position = The position to get the entity at
+
+        Returns:
+            The entity at that position or $(D null).
+    */
+    Entity getEntityAt(vec2 position) {
+        foreach(entity; entities) {
+            if (entity.hitbox.intersects(position))
+                return entity;
+        }
+        return null;
     }
 }
 
