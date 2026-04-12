@@ -157,7 +157,7 @@ private:
         vec2 br = vec2(area.right, area.bottom);
 
         // Make rotated vertices.
-        if (rotation != 0) {
+        if (origin != vec2(0, 0)) {
             mat3 rotM = mat3.zRotation(rotation);
             tl = ((rotM * vec3(-origin.x, -origin.y, 0)).xy * size) + area.corner;
             bl = ((rotM * vec3(-origin.x, +origin.y, 0)).xy * size) + area.corner;

@@ -54,7 +54,7 @@ private:
             surface.size = NioExtent2D(640, 480);
             surface.format = NioPixelFormat.bgra8UnormSRGB;
             surface.framesInFlight = 3;
-            surface.presentMode = NioPresentMode.mailbox;
+            surface.presentMode = NioPresentMode.vsync;
             return surface;
         } else version(linux) {
 

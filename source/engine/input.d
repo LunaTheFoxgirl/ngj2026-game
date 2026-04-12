@@ -18,7 +18,7 @@ private:
 static:
 @nogc:
     __gshared bool[] prevState = null;
-    __gshared const(bool)[] currState = null;
+    __gshared bool[] currState = null;
 
     static const(bool)[] getKeyboardState() {
         int keyCount;
@@ -31,11 +31,19 @@ public:
         Updates the keyboard info.
     */
     void update() {
-        if (prevState.length < currState.length) {
-            prevState = prevState.nu_resize(currState.length);
+        if (currState.length == 0) {
+
+            int keyCount;
+            cast(void)SDL_GetKeyboardState(&keyCount);
+            
+            // First iteration
+            currState = nu_malloca!bool(keyCount);
+            prevState = nu_malloca!bool(keyCount);
         }
+
+        auto cstate = getKeyboardState();
         prevState[0..$] = currState[0..$];
-        currState = getKeyboardState();
+        currState[0..$] = cstate[0..$];
     }
 
     /**
@@ -119,6 +127,11 @@ public:
         The amount the mouse moved this frame.
     */
     @property vec2 movement() => vec2(rmx, rmy);
+
+    /**
+        Position of the mouse relative to the window.
+    */
+    @property vec2 position() => vec2(mx, my);
 
     /**
         Updates the mouse state

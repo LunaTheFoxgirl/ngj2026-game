@@ -54,6 +54,16 @@ public:
     @property uint height() => handle.height;
 
     /**
+        Size of texture.
+    */
+    @property vec2 size() => vec2(handle_.width, handle_.height);
+
+    /**
+        Center of texture with subpixel precision
+    */
+    @property vec2 center() => vec2(handle_.width/2, handle_.height/2);
+
+    /**
         The format of the texture data.
     */
     @property NioPixelFormat format() => handle.format;
